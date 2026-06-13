@@ -1,0 +1,24 @@
+services:
+  - type: web
+    name: pinkbabel
+    runtime: python
+    plan: free
+    buildCommand: python -m pip install .
+    startCommand: python -m mi_bot.main
+    healthCheckPath: /health
+    autoDeployTrigger: commit
+    envVars:
+      - key: BOT_TOKEN
+        sync: false
+      - key: BOT_NAME
+        value: PinkBabel
+      - key: TARGET_LANG
+        value: es
+      - key: BOT_DATA_FILE
+        value: /tmp/pinkbabel/bot_data.json
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SECRET_KEY
+        sync: false
+      - key: PYTHON_VERSION
+        value: 3.12.11
