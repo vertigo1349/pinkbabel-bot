@@ -94,7 +94,7 @@ This project is set up to keep secrets out of code. Use environment variables fo
 - `BOT_NAME`: optional display name used by the startup message
 - `TARGET_LANG`: default language for translations, for example `es` or `en` (defaults to `es`)
 - `BOT_DATA_FILE`: optional path for saved chat preferences (defaults to `bot_data.json`)
-- `SUPABASE_URL`: Supabase project URL; enables durable storage when set
+- `SUPABASE_URL`: Supabase Project URL, for example `https://your-project.supabase.co`; do not use the `postgresql://` database connection string
 - `SUPABASE_SECRET_KEY`: server-only Supabase secret key; never commit or expose it
 
 The translation backend uses internet access and a free translation library. If you want a different provider later, the code is already split so we can swap it cleanly.
@@ -109,6 +109,10 @@ are configured. Otherwise it falls back to the local JSON file.
 3. In Supabase, copy the project URL from `Integrations > Data API`.
 4. Create or copy a server secret key from `Settings > API Keys`.
 5. Store both values only as environment variables.
+
+Use the HTTP Project URL for `SUPABASE_URL`. A value that starts with
+`postgresql://` is the direct database connection string and will not work with
+PinkBabel's REST storage adapter.
 
 The secret key bypasses Row Level Security and must only exist in Render or
 another trusted server environment. The SQL schema blocks the public `anon`

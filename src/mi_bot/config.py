@@ -5,6 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 import os
 from pathlib import Path
+from urllib.parse import urlparse
 
 from .languages import LanguageError, resolve_language_code
 
@@ -50,6 +51,8 @@ def load_settings(*, require_bot_token: bool = False) -> Settings:
         raise ConfigError(
             "SUPABASE_URL and SUPABASE_SECRET_KEY must be configured together."
         )
+    if supabase_url:
+        _validate_supabase_url(supabase_url)
 
     try:
         target_language = resolve_language_code(raw_target_language)
@@ -64,3 +67,13 @@ def load_settings(*, require_bot_token: bool = False) -> Settings:
         supabase_url=supabase_url,
         supabase_key=supabase_key,
     )
+
+
+def _validate_supabase_url(value: str) -> None:
+    parsed = urlparse(value)
+    if parsed.scheme not in {"http", "https"} or not parsed.netloc:
+        raise ConfigError(
+            "SUPABASE_URL must be the Supabase Project URL, for example "
+            "https://your-project.supabase.co. Do not use the postgresql:// "
+            "database connection string."
+        )

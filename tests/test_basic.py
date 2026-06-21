@@ -23,6 +23,7 @@ from mi_bot.health import start_health_server
 from mi_bot.main import TelegramTranslatorBot as MainTelegramTranslatorBot, main
 from mi_bot.storage import (
     JsonPreferenceStore,
+    ResilientPreferenceStore,
     SupabasePreferenceStore,
     create_preference_store,
 )
@@ -80,6 +81,16 @@ def test_load_settings_requires_complete_supabase_config(
     monkeypatch.delenv("SUPABASE_SERVICE_ROLE_KEY", raising=False)
 
     with pytest.raises(ConfigError, match="must be configured together"):
+        load_settings()
+
+
+def test_load_settings_rejects_postgres_supabase_url(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("SUPABASE_URL", "postgresql://user:pass@host/db")
+    monkeypatch.setenv("SUPABASE_SECRET_KEY", "secret")
+
+    with pytest.raises(ConfigError, match="Project URL"):
         load_settings()
 
 
@@ -197,7 +208,8 @@ def test_preference_store_uses_supabase_when_configured(tmp_path: Path) -> None:
         supabase_key="secret",
     )
 
-    assert isinstance(store, SupabasePreferenceStore)
+    assert isinstance(store, ResilientPreferenceStore)
+    assert isinstance(store.primary, SupabasePreferenceStore)
 
 
 def test_supabase_store_reads_group_languages(
