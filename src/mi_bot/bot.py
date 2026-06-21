@@ -30,7 +30,7 @@ from .languages import (
     resolve_language_code,
     supported_language_lines,
 )
-from .storage import create_preference_store
+from .storage import StorageError, create_preference_store
 from .translator import DeepTranslatorService, TranslationError, Translator
 from .ui import (
     build_config_keyboard,
@@ -285,7 +285,7 @@ class TelegramTranslatorBot:
         if message is None or chat is None:
             return
 
-        auto_enabled = self.preferences.is_auto_translation_enabled(chat.id)
+        auto_enabled = self._is_auto_translation_enabled(chat.id)
         await message.reply_text(
             self._config_text(update, auto_enabled),
             reply_markup=build_config_keyboard(
@@ -307,7 +307,7 @@ class TelegramTranslatorBot:
         await query.answer()
         action = query.data or "menu:main"
         is_group = self._is_group(chat.type)
-        auto_enabled = self.preferences.is_auto_translation_enabled(chat.id)
+        auto_enabled = self._is_auto_translation_enabled(chat.id)
 
         if action == "menu:main":
             await self._edit_query_message(
@@ -336,7 +336,7 @@ class TelegramTranslatorBot:
             )
         elif action == "menu:mylang":
             user = query.from_user
-            selected_language = self.preferences.get_user_language(chat.id, user.id)
+            selected_language = self._user_language_for(chat.id, user.id)
             await self._edit_query_message(
                 query,
                 "🗣️ Elige tu idioma\nPinkBabel traducira los mensajes de los demas para ti.",
@@ -362,7 +362,7 @@ class TelegramTranslatorBot:
             )
         elif action == "config:mylang":
             user = query.from_user
-            selected_language = self.preferences.get_user_language(chat.id, user.id)
+            selected_language = self._user_language_for(chat.id, user.id)
             await self._edit_query_message(
                 query,
                 "🗣️ Elige tu idioma para esta conversacion.",
@@ -370,7 +370,16 @@ class TelegramTranslatorBot:
             )
         elif action in {"config:auto:on", "config:auto:off"}:
             enabled = action.endswith(":on")
-            self.preferences.set_auto_translation(chat.id, enabled)
+            try:
+                self.preferences.set_auto_translation(chat.id, enabled)
+            except StorageError as exc:
+                self._log_storage_error(exc)
+                await self._edit_query_message(
+                    query,
+                    self._storage_error_text(),
+                    build_config_keyboard(is_group, auto_enabled),
+                )
+                return
             await self._edit_query_message(
                 query,
                 self._config_text(update, enabled),
@@ -416,6 +425,11 @@ class TelegramTranslatorBot:
                 query,
                 "⚠️ Ese idioma ya no esta disponible. Abre el menu de nuevo.",
             )
+            return
+
+        except StorageError as exc:
+            self._log_storage_error(exc)
+            await self._edit_query_message(query, self._storage_error_text())
             return
 
         if prefix == "mylang":
@@ -527,8 +541,8 @@ class TelegramTranslatorBot:
             await message.reply_text("Uso: /autotr on, /autotr off o /autotr status")
             return
 
-        enabled = self.preferences.is_auto_translation_enabled(chat.id)
-        languages = self.preferences.get_group_languages(chat.id)
+        enabled = self._is_auto_translation_enabled(chat.id)
+        languages = self._group_languages_for(chat.id)
         language_names = ", ".join(language_display(code) for code in languages) or "ninguno"
         await message.reply_text(
             f"💬 Traduccion automatica: {'activada' if enabled else 'desactivada'}\n"
@@ -589,7 +603,7 @@ class TelegramTranslatorBot:
         if message is None or chat is None or user is None:
             return
 
-        if not self.preferences.is_auto_translation_enabled(chat.id):
+        if not self._is_auto_translation_enabled(chat.id):
             return
 
         text = (message.text or "").strip()
@@ -655,7 +669,11 @@ class TelegramTranslatorBot:
         if chat is None:
             return self.settings.target_language
 
-        return self.preferences.get_chat_language(chat.id, self.settings.target_language)
+        try:
+            return self.preferences.get_chat_language(chat.id, self.settings.target_language)
+        except StorageError as exc:
+            self._log_storage_error(exc)
+            return self.settings.target_language
 
     @staticmethod
     async def _edit_query_message(query, text: str, reply_markup=None) -> None:
@@ -685,7 +703,7 @@ class TelegramTranslatorBot:
             f"🌍 Idioma destino: {language_display(target_language)}",
         ]
         if self._is_group(chat.type):
-            languages = self.preferences.get_group_languages(chat.id)
+            languages = self._group_languages_for(chat.id)
             configured = ", ".join(language_display(code) for code in languages) or "ninguno"
             lines.extend(
                 [
@@ -723,6 +741,38 @@ class TelegramTranslatorBot:
             "2. Activa la conversacion con el boton de configuracion.\n"
             "3. PinkBabel respondera con las traducciones necesarias."
         )
+
+    def _is_auto_translation_enabled(self, chat_id: int) -> bool:
+        try:
+            return self.preferences.is_auto_translation_enabled(chat_id)
+        except StorageError as exc:
+            self._log_storage_error(exc)
+            return False
+
+    def _user_language_for(self, chat_id: int, user_id: int) -> str | None:
+        try:
+            return self.preferences.get_user_language(chat_id, user_id)
+        except StorageError as exc:
+            self._log_storage_error(exc)
+            return None
+
+    def _group_languages_for(self, chat_id: int) -> list[str]:
+        try:
+            return self.preferences.get_group_languages(chat_id)
+        except StorageError as exc:
+            self._log_storage_error(exc)
+            return []
+
+    @staticmethod
+    def _storage_error_text() -> str:
+        return (
+            "No pude acceder a la configuracion guardada.\n"
+            "Revisa SUPABASE_URL, SUPABASE_SECRET_KEY y las tablas pinkbabel_* en Supabase."
+        )
+
+    @staticmethod
+    def _log_storage_error(exc: StorageError) -> None:
+        print(f"Preference storage error: {exc}", file=sys.stderr)
 
     @staticmethod
     def _is_group(chat_type: str) -> bool:

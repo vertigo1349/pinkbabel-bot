@@ -6,6 +6,7 @@ from dataclasses import dataclass, field
 import json
 import os
 from pathlib import Path
+import sys
 from typing import Any
 from urllib.error import HTTPError, URLError
 from urllib.parse import urlencode
@@ -336,14 +337,87 @@ class SupabasePreferenceStore:
             raise StorageError("Supabase returned an invalid JSON response.") from exc
 
 
+@dataclass(slots=True)
+class ResilientPreferenceStore:
+    """Use Supabase when available and fall back to JSON when it fails."""
+
+    primary: SupabasePreferenceStore
+    fallback: JsonPreferenceStore
+
+    def get_chat_language(self, chat_id: int, default_language: str) -> str:
+        try:
+            return self.primary.get_chat_language(chat_id, default_language)
+        except StorageError as exc:
+            self._log_error(exc)
+            return self.fallback.get_chat_language(chat_id, default_language)
+
+    def set_chat_language(self, chat_id: int, target_language: str) -> str:
+        language_code = resolve_language_code(target_language)
+        try:
+            return self.primary.set_chat_language(chat_id, language_code)
+        except StorageError as exc:
+            self._log_error(exc)
+            return self.fallback.set_chat_language(chat_id, language_code)
+
+    def set_user_language(self, chat_id: int, user_id: int, language: str) -> str:
+        language_code = resolve_language_code(language)
+        try:
+            return self.primary.set_user_language(chat_id, user_id, language_code)
+        except StorageError as exc:
+            self._log_error(exc)
+            return self.fallback.set_user_language(chat_id, user_id, language_code)
+
+    def get_user_language(self, chat_id: int, user_id: int) -> str | None:
+        try:
+            return self.primary.get_user_language(chat_id, user_id)
+        except StorageError as exc:
+            self._log_error(exc)
+            return self.fallback.get_user_language(chat_id, user_id)
+
+    def get_group_target_languages(self, chat_id: int, sender_user_id: int) -> list[str]:
+        try:
+            return self.primary.get_group_target_languages(chat_id, sender_user_id)
+        except StorageError as exc:
+            self._log_error(exc)
+            return self.fallback.get_group_target_languages(chat_id, sender_user_id)
+
+    def set_auto_translation(self, chat_id: int, enabled: bool) -> None:
+        try:
+            self.primary.set_auto_translation(chat_id, enabled)
+        except StorageError as exc:
+            self._log_error(exc)
+            self.fallback.set_auto_translation(chat_id, enabled)
+
+    def is_auto_translation_enabled(self, chat_id: int) -> bool:
+        try:
+            return self.primary.is_auto_translation_enabled(chat_id)
+        except StorageError as exc:
+            self._log_error(exc)
+            return self.fallback.is_auto_translation_enabled(chat_id)
+
+    def get_group_languages(self, chat_id: int) -> list[str]:
+        try:
+            return self.primary.get_group_languages(chat_id)
+        except StorageError as exc:
+            self._log_error(exc)
+            return self.fallback.get_group_languages(chat_id)
+
+    @staticmethod
+    def _log_error(exc: StorageError) -> None:
+        print(f"Preference storage fallback: {exc}", file=sys.stderr)
+
+
 def create_preference_store(
     data_file: Path,
     *,
     supabase_url: str | None = None,
     supabase_key: str | None = None,
-) -> JsonPreferenceStore | SupabasePreferenceStore:
+) -> JsonPreferenceStore | SupabasePreferenceStore | ResilientPreferenceStore:
     """Select durable Supabase storage when its credentials are configured."""
 
     if supabase_url and supabase_key:
-        return SupabasePreferenceStore(supabase_url, supabase_key)
+        return ResilientPreferenceStore(
+            SupabasePreferenceStore(supabase_url, supabase_key),
+            JsonPreferenceStore(data_file),
+        )
     return JsonPreferenceStore(data_file)
