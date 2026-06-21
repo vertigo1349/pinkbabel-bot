@@ -331,7 +331,7 @@ class TelegramTranslatorBot:
             target_language = self._target_language_for(update)
             await self._edit_query_message(
                 query,
-                f"Elige el idioma destino. Actual: {language_display(target_language)}",
+                f"🌍 Elige idioma destino\nActual: {language_display(target_language)}",
                 build_language_keyboard(target_language),
             )
         elif action == "menu:mylang":
@@ -339,14 +339,14 @@ class TelegramTranslatorBot:
             selected_language = self.preferences.get_user_language(chat.id, user.id)
             await self._edit_query_message(
                 query,
-                "Elige tu idioma. PinkBabel traducira los mensajes de los demas para ti.",
+                "🗣️ Elige tu idioma\nPinkBabel traducira los mensajes de los demas para ti.",
                 build_language_keyboard(selected_language, callback_prefix="mylang"),
             )
         elif action == "menu:translate":
             text = (
-                "Usa /tr <texto> o responde a un mensaje con /tr."
+                "🌐 Traduccion manual\nUsa /tr <texto> o responde a un mensaje con /tr."
                 if is_group
-                else "Enviame cualquier texto y lo traducire al idioma configurado.\n"
+                else "🌐 Traduccion rapida\nEnviame cualquier texto y lo traducire al idioma configurado.\n"
                 "Tambien puedes responder a un mensaje con /tr."
             )
             await self._edit_query_message(
@@ -365,7 +365,7 @@ class TelegramTranslatorBot:
             selected_language = self.preferences.get_user_language(chat.id, user.id)
             await self._edit_query_message(
                 query,
-                "Elige tu idioma para esta conversacion.",
+                "🗣️ Elige tu idioma para esta conversacion.",
                 build_language_keyboard(selected_language, callback_prefix="mylang"),
             )
         elif action in {"config:auto:on", "config:auto:off"}:
@@ -384,7 +384,7 @@ class TelegramTranslatorBot:
 
         target_language = self._target_language_for(update)
         await message.reply_text(
-            f"Elige el idioma destino. Actual: {language_display(target_language)}",
+            f"🌍 Elige idioma destino\nActual: {language_display(target_language)}",
             reply_markup=build_language_keyboard(target_language),
         )
 
@@ -414,19 +414,19 @@ class TelegramTranslatorBot:
         except LanguageError:
             await self._edit_query_message(
                 query,
-                "Ese idioma ya no esta disponible. Abre el menu de nuevo.",
+                "⚠️ Ese idioma ya no esta disponible. Abre el menu de nuevo.",
             )
             return
 
         if prefix == "mylang":
             text = (
-                f"Tu idioma fue guardado: {language_display(language_code)}\n"
+                f"✅ Tu idioma fue guardado: {language_display(language_code)}\n"
                 "La traduccion automatica ya puede usar esta preferencia."
             )
             keyboard = build_language_keyboard(language_code, callback_prefix="mylang")
         else:
             text = (
-                f"Idioma destino guardado: {language_display(language_code)}\n"
+                f"✅ Idioma destino guardado: {language_display(language_code)}\n"
                 "Ahora enviame cualquier texto para traducir."
             )
             keyboard = build_language_keyboard(language_code)
@@ -439,7 +439,7 @@ class TelegramTranslatorBot:
             return
 
         target_language = self._target_language_for(update)
-        await message.reply_text(f"Idioma destino actual: {language_display(target_language)}")
+        await message.reply_text(f"🌍 Idioma destino actual: {language_display(target_language)}")
 
     async def list_languages(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         message = update.effective_message
@@ -447,7 +447,7 @@ class TelegramTranslatorBot:
             return
 
         await message.reply_text(
-            "Idiomas soportados:\n"
+            "🌍 Idiomas soportados:\n"
             + "\n".join(supported_language_lines())
             + "\n\nTambien puedes usar nombres como `english`, `espanol` o `frances`."
         )
@@ -466,10 +466,10 @@ class TelegramTranslatorBot:
         try:
             language_code = self.preferences.set_chat_language(chat.id, raw_language)
         except LanguageError as exc:
-            await message.reply_text(f"No reconozco ese idioma: {exc}\nUsa /langs para ver opciones.")
+            await message.reply_text(f"⚠️ No reconozco ese idioma: {exc}\nUsa /langs para ver opciones.")
             return
 
-        await message.reply_text(f"Listo. Idioma destino guardado: {language_display(language_code)}")
+        await message.reply_text(f"✅ Idioma destino guardado: {language_display(language_code)}")
 
     async def set_my_language(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
         message = update.effective_message
@@ -479,7 +479,7 @@ class TelegramTranslatorBot:
             return
 
         if chat.type not in {"group", "supergroup"}:
-            await message.reply_text("Este comando se usa dentro del grupo donde hablaran las dos personas.")
+            await message.reply_text("👥 Este comando se usa dentro del grupo donde hablaran las dos personas.")
             return
 
         raw_language = " ".join(context.args).strip()
@@ -490,11 +490,11 @@ class TelegramTranslatorBot:
         try:
             language_code = self.preferences.set_user_language(chat.id, user.id, raw_language)
         except LanguageError as exc:
-            await message.reply_text(f"No reconozco ese idioma: {exc}\nUsa /langs para ver opciones.")
+            await message.reply_text(f"⚠️ No reconozco ese idioma: {exc}\nUsa /langs para ver opciones.")
             return
 
         await message.reply_text(
-            f"Tu idioma en este grupo es {language_display(language_code)}."
+            f"✅ Tu idioma en este grupo es {language_display(language_code)}."
         )
 
     async def auto_translate(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -505,7 +505,7 @@ class TelegramTranslatorBot:
 
         if chat.type not in {"group", "supergroup"}:
             await message.reply_text(
-                "La conversacion en tiempo real funciona en un grupo con PinkBabel y las dos personas."
+                "👥 La conversacion en tiempo real funciona en un grupo con PinkBabel y las dos personas."
             )
             return
 
@@ -513,14 +513,14 @@ class TelegramTranslatorBot:
         if action in {"on", "activar", "start"}:
             self.preferences.set_auto_translation(chat.id, True)
             await message.reply_text(
-                "Traduccion automatica activada.\n"
+                "🟢 Traduccion automatica activada.\n"
                 "Cada participante debe registrar su idioma con /mylang <idioma>."
             )
             return
 
         if action in {"off", "desactivar", "stop"}:
             self.preferences.set_auto_translation(chat.id, False)
-            await message.reply_text("Traduccion automatica desactivada.")
+            await message.reply_text("🔴 Traduccion automatica desactivada.")
             return
 
         if action not in {"status", "estado"}:
@@ -531,8 +531,8 @@ class TelegramTranslatorBot:
         languages = self.preferences.get_group_languages(chat.id)
         language_names = ", ".join(language_display(code) for code in languages) or "ninguno"
         await message.reply_text(
-            f"Traduccion automatica: {'activada' if enabled else 'desactivada'}\n"
-            f"Idiomas registrados: {language_names}"
+            f"💬 Traduccion automatica: {'activada' if enabled else 'desactivada'}\n"
+            f"🗣️ Idiomas registrados: {language_names}"
         )
 
     async def translate_default_language(self, update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
@@ -621,7 +621,7 @@ class TelegramTranslatorBot:
                 await message.reply_text(chunk)
 
         if not responses and translation_errors:
-            await message.reply_text(f"No pude traducir el texto: {translation_errors[0]}")
+            await message.reply_text(f"⚠️ No pude traducir el texto: {translation_errors[0]}")
 
     async def _translate_and_reply(self, update: Update, request: TranslationRequest) -> None:
         message = update.effective_message
@@ -631,11 +631,11 @@ class TelegramTranslatorBot:
         try:
             translated = await self._translate_text(request.text, request.target_language)
         except TranslationError as exc:
-            await message.reply_text(f"No pude traducir el texto: {exc}")
+            await message.reply_text(f"⚠️ No pude traducir el texto: {exc}")
             return
 
         response = (
-            f"Traduccion ({language_display(request.target_language)}):\n"
+            f"🌐 Traduccion ({language_display(request.target_language)}):\n"
             f"{translated}\n\n"
             "Texto original:\n"
             f"{request.text}"
@@ -668,29 +668,29 @@ class TelegramTranslatorBot:
     def _main_menu_text(self, target_language: str, chat_type: str) -> str:
         location = "grupo" if self._is_group(chat_type) else "chat privado"
         return (
-            f"PinkBabel\n"
-            f"Idioma destino: {language_display(target_language)}\n"
-            f"Modo: {location}\n\n"
-            "Selecciona una opcion o enviame un texto."
+            "🌸 PinkBabel\n\n"
+            f"🌍 Idioma destino: {language_display(target_language)}\n"
+            f"📍 Modo: {location}\n\n"
+            "Elige una accion o enviame un texto."
         )
 
     def _config_text(self, update: Update, auto_enabled: bool) -> str:
         chat = update.effective_chat
         if chat is None:
-            return "Configuracion no disponible."
+            return "⚠️ Configuracion no disponible."
 
         target_language = self._target_language_for(update)
         lines = [
-            "Configuracion",
-            f"Idioma destino: {language_display(target_language)}",
+            "⚙️ Configuracion",
+            f"🌍 Idioma destino: {language_display(target_language)}",
         ]
         if self._is_group(chat.type):
             languages = self.preferences.get_group_languages(chat.id)
             configured = ", ".join(language_display(code) for code in languages) or "ninguno"
             lines.extend(
                 [
-                    f"Conversacion automatica: {'activada' if auto_enabled else 'desactivada'}",
-                    f"Idiomas registrados: {configured}",
+                    f"💬 Conversacion automatica: {'activada' if auto_enabled else 'desactivada'}",
+                    f"🗣️ Idiomas registrados: {configured}",
                 ]
             )
         return "\n".join(lines)
@@ -698,13 +698,13 @@ class TelegramTranslatorBot:
     @staticmethod
     def _help_text() -> str:
         return (
-            "Ayuda\n\n"
-            "Chat privado:\n"
+            "❔ Ayuda PinkBabel\n\n"
+            "🌐 Chat privado\n"
             "- Envia texto para traducirlo.\n"
-            "- /idioma cambia el idioma destino.\n"
-            "- /trto <idioma> <texto> traduce una sola vez.\n\n"
-            "Conversacion en grupo:\n"
-            "- Cada persona usa /mylang <idioma>.\n"
+            "- Usa /idioma para cambiar el destino.\n"
+            "- Usa /trto <idioma> <texto> para una traduccion puntual.\n\n"
+            "💬 Conversacion en grupo\n"
+            "- Cada persona registra su idioma con /mylang <idioma>.\n"
             "- Activa con /autotr on.\n"
             "- Detenla con /autotr off."
         )
@@ -713,12 +713,12 @@ class TelegramTranslatorBot:
     def _conversation_help_text(is_group: bool) -> str:
         if not is_group:
             return (
-                "La conversacion automatica funciona dentro de un grupo.\n"
+                "💬 La conversacion automatica funciona dentro de un grupo.\n"
                 "Agrega a PinkBabel y a la otra persona. Luego cada participante "
                 "usa /mylang <idioma> y activa /autotr on."
             )
         return (
-            "Conversacion automatica\n\n"
+            "💬 Conversacion automatica\n\n"
             "1. Cada participante usa /mylang <idioma>.\n"
             "2. Activa la conversacion con el boton de configuracion.\n"
             "3. PinkBabel respondera con las traducciones necesarias."
@@ -736,6 +736,6 @@ class TelegramTranslatorBot:
             return
 
         try:
-            await message.reply_text("Se produjo un error inesperado. Intenta de nuevo.")
+            await message.reply_text("⚠️ Se produjo un error inesperado. Intenta de nuevo.")
         except Exception:  # pragma: no cover - best effort only
             return

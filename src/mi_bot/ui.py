@@ -10,22 +10,22 @@ from .languages import FEATURED_LANGUAGE_CODES, SUPPORTED_LANGUAGES
 def build_main_menu_keyboard(is_group: bool) -> InlineKeyboardMarkup:
     """Build the main navigation menu."""
 
-    language_label = "Mi idioma" if is_group else "Idioma"
+    language_label = "🗣️ Mi idioma" if is_group else "🌍 Idioma"
     language_callback = "menu:mylang" if is_group else "menu:language"
     rows = [
         [
-            InlineKeyboardButton("Traducir", callback_data="menu:translate"),
+            InlineKeyboardButton("🌐 Traducir", callback_data="menu:translate"),
             InlineKeyboardButton(language_label, callback_data=language_callback),
         ],
         [
-            InlineKeyboardButton("Ayuda", callback_data="menu:help"),
-            InlineKeyboardButton("Configuracion", callback_data="menu:config"),
+            InlineKeyboardButton("❔ Ayuda", callback_data="menu:help"),
+            InlineKeyboardButton("⚙️ Config", callback_data="menu:config"),
         ],
     ]
     if is_group:
         rows.insert(
             1,
-            [InlineKeyboardButton("Conversacion", callback_data="menu:conversation")],
+            [InlineKeyboardButton("💬 Conversacion", callback_data="menu:conversation")],
         )
     return InlineKeyboardMarkup(rows)
 
@@ -36,10 +36,10 @@ def build_help_keyboard() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(
         [
             [
-                InlineKeyboardButton("Idioma", callback_data="menu:language"),
-                InlineKeyboardButton("Configuracion", callback_data="menu:config"),
+                InlineKeyboardButton("🌍 Idioma", callback_data="menu:language"),
+                InlineKeyboardButton("⚙️ Config", callback_data="menu:config"),
             ],
-            [InlineKeyboardButton("Volver al menu", callback_data="menu:main")],
+            [InlineKeyboardButton("⬅️ Menu", callback_data="menu:main")],
         ]
     )
 
@@ -48,16 +48,16 @@ def build_config_keyboard(is_group: bool, auto_enabled: bool) -> InlineKeyboardM
     """Build the configuration controls."""
 
     rows = [
-        [InlineKeyboardButton("Cambiar idioma", callback_data="menu:language")],
+        [InlineKeyboardButton("🌍 Cambiar idioma", callback_data="menu:language")],
     ]
     if is_group:
         action = "off" if auto_enabled else "on"
-        label = "Detener conversacion" if auto_enabled else "Activar conversacion"
+        label = "🔴 Detener conversacion" if auto_enabled else "🟢 Activar conversacion"
         rows.append([InlineKeyboardButton(label, callback_data=f"config:auto:{action}")])
-        rows.append([InlineKeyboardButton("Configurar mi idioma", callback_data="config:mylang")])
+        rows.append([InlineKeyboardButton("🗣️ Configurar mi idioma", callback_data="config:mylang")])
     else:
-        rows.append([InlineKeyboardButton("Como usar en un grupo", callback_data="menu:conversation")])
-    rows.append([InlineKeyboardButton("Volver al menu", callback_data="menu:main")])
+        rows.append([InlineKeyboardButton("👥 Usar en grupo", callback_data="menu:conversation")])
+    rows.append([InlineKeyboardButton("⬅️ Menu", callback_data="menu:main")])
     return InlineKeyboardMarkup(rows)
 
 
@@ -70,7 +70,7 @@ def build_language_keyboard(
     buttons = []
     for code in FEATURED_LANGUAGE_CODES:
         language = SUPPORTED_LANGUAGES[code]
-        marker = "[x] " if code == selected_language else ""
+        marker = "✅ " if code == selected_language else ""
         buttons.append(
             InlineKeyboardButton(
                 f"{marker}{language.name}",
@@ -79,5 +79,5 @@ def build_language_keyboard(
         )
 
     rows = [buttons[index : index + 2] for index in range(0, len(buttons), 2)]
-    rows.append([InlineKeyboardButton("Volver", callback_data="menu:config")])
+    rows.append([InlineKeyboardButton("⬅️ Volver", callback_data="menu:config")])
     return InlineKeyboardMarkup(rows)

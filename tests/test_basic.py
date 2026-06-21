@@ -114,6 +114,11 @@ def test_language_aliases_are_resolved() -> None:
     assert resolve_language_code("coreano") == "ko"
     assert resolve_language_code("japones") == "ja"
     assert resolve_language_code("chino") == "zh-cn"
+    assert resolve_language_code("ucraniano") == "uk"
+    assert resolve_language_code("tailandes") == "th"
+    assert resolve_language_code("vietnamita") == "vi"
+    assert resolve_language_code("polaco") == "pl"
+    assert resolve_language_code("hebreo") == "iw"
 
     with pytest.raises(LanguageError):
         resolve_language_code("klingon")
@@ -140,7 +145,7 @@ def test_language_keyboard_marks_selected_language() -> None:
     keyboard = build_language_keyboard("ru")
     buttons = [button for row in keyboard.inline_keyboard for button in row]
 
-    assert any(button.callback_data == "lang:ru" and button.text == "[x] Ruso" for button in buttons)
+    assert any(button.callback_data == "lang:ru" and button.text == "✅ Ruso" for button in buttons)
     assert any(button.callback_data == "lang:ko" and button.text == "Coreano" for button in buttons)
 
 
