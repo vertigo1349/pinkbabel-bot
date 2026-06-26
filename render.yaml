@@ -4,7 +4,7 @@ services:
     runtime: python
     plan: free
     buildCommand: python -m pip install .
-    startCommand: python -m mi_bot.main
+    startCommand: gunicorn --bind 0.0.0.0:$PORT --workers 1 --threads 4 --timeout 120 mi_bot.webhook:flask_app
     healthCheckPath: /health
     autoDeployTrigger: commit
     envVars:
@@ -16,6 +16,10 @@ services:
         value: es
       - key: BOT_DATA_FILE
         value: /tmp/pinkbabel/bot_data.json
+      - key: WEBHOOK_URL
+        value: https://pinkbabel-bot.onrender.com
+      - key: WEBHOOK_PATH
+        value: telegram
       - key: SUPABASE_URL
         sync: false
       - key: SUPABASE_SECRET_KEY

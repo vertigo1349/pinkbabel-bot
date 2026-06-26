@@ -24,6 +24,9 @@ class Settings:
     data_file: Path
     supabase_url: str | None = None
     supabase_key: str | None = None
+    webhook_url: str | None = None
+    webhook_path: str = "telegram"
+    webhook_secret: str | None = None
 
 
 def load_settings(*, require_bot_token: bool = False) -> Settings:
@@ -44,6 +47,13 @@ def load_settings(*, require_bot_token: bool = False) -> Settings:
         or os.getenv("SUPABASE_SERVICE_ROLE_KEY")
         or ""
     ).strip() or None
+    webhook_url = (
+        os.getenv("WEBHOOK_URL")
+        or os.getenv("RENDER_EXTERNAL_URL")
+        or ""
+    ).strip() or None
+    webhook_path = os.getenv("WEBHOOK_PATH", "telegram").strip().strip("/") or "telegram"
+    webhook_secret = os.getenv("WEBHOOK_SECRET", "").strip() or None
 
     if require_bot_token and not bot_token:
         raise ConfigError("BOT_TOKEN is required but was not set.")
@@ -53,6 +63,8 @@ def load_settings(*, require_bot_token: bool = False) -> Settings:
         )
     if supabase_url:
         _validate_supabase_url(supabase_url)
+    if webhook_url:
+        _validate_webhook_url(webhook_url)
 
     try:
         target_language = resolve_language_code(raw_target_language)
@@ -66,6 +78,9 @@ def load_settings(*, require_bot_token: bool = False) -> Settings:
         data_file=data_file,
         supabase_url=supabase_url,
         supabase_key=supabase_key,
+        webhook_url=webhook_url.rstrip("/") if webhook_url else None,
+        webhook_path=webhook_path,
+        webhook_secret=webhook_secret,
     )
 
 
@@ -76,4 +91,13 @@ def _validate_supabase_url(value: str) -> None:
             "SUPABASE_URL must be the Supabase Project URL, for example "
             "https://your-project.supabase.co. Do not use the postgresql:// "
             "database connection string."
+        )
+
+
+def _validate_webhook_url(value: str) -> None:
+    parsed = urlparse(value)
+    if parsed.scheme != "https" or not parsed.netloc:
+        raise ConfigError(
+            "WEBHOOK_URL must be a public HTTPS URL, for example "
+            "https://pinkbabel-bot.onrender.com."
         )

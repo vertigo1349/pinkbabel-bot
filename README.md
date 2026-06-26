@@ -94,6 +94,8 @@ This project is set up to keep secrets out of code. Use environment variables fo
 - `BOT_NAME`: optional display name used by the startup message
 - `TARGET_LANG`: default language for translations, for example `es` or `en` (defaults to `es`)
 - `BOT_DATA_FILE`: optional path for saved chat preferences (defaults to `bot_data.json`)
+- `WEBHOOK_URL`: public Render URL used by Telegram webhooks, for example `https://pinkbabel-bot.onrender.com`
+- `WEBHOOK_PATH`: webhook path used after `WEBHOOK_URL` (defaults to `telegram`)
 - `SUPABASE_URL`: Supabase Project URL, for example `https://your-project.supabase.co`; do not use the `postgresql://` database connection string
 - `SUPABASE_SECRET_KEY`: server-only Supabase secret key; never commit or expose it
 
@@ -143,8 +145,7 @@ View logs:
 docker logs -f pinkbabel
 ```
 
-Only one PinkBabel process may poll Telegram at a time. Stop the local Windows
-process before starting the deployed container.
+Only one PinkBabel deployment should own the Telegram webhook at a time.
 
 ## Deploy on Render
 
@@ -155,11 +156,12 @@ The repository includes `render.yaml` for a native Python Web Service:
 3. Connect the GitHub repository.
 4. Enter a newly generated `BOT_TOKEN` when Render requests it.
 5. Enter `SUPABASE_URL` and `SUPABASE_SECRET_KEY`.
-6. Deploy the Blueprint.
-7. Stop the local Windows process before the Render service starts polling.
+6. Confirm `WEBHOOK_URL=https://pinkbabel-bot.onrender.com`.
+7. Deploy the Blueprint.
+8. Stop any other PinkBabel deployment before this service starts.
 
-PinkBabel exposes `/health` on Render's `PORT` while Telegram polling runs in
-the same process.
+PinkBabel exposes `/health` on Render's `PORT` and receives Telegram updates at
+`/telegram`.
 
 The Free Web Service has important limitations:
 
@@ -168,8 +170,8 @@ The Free Web Service has important limitations:
   from being lost after a restart or redeploy.
 - Background Workers and persistent disks require a paid instance.
 
-For reliable continuous operation, use a paid Background Worker. Supabase
-already provides durable preference storage, so a persistent disk is optional.
+With webhook mode, Telegram can wake the Render service by calling `/telegram`.
+The first response after sleep can still be slow on the free plan.
 
 ## Production notes
 
@@ -179,8 +181,9 @@ already provides durable preference storage, so a persistent disk is optional.
 - `deep-translator` is suitable for an initial release but uses an unofficial
   free translation backend. A paid official provider is recommended if usage
   or reliability requirements increase.
-- Keep the host online continuously. The bot currently uses Telegram long
-  polling and does not require a public HTTP port.
+- Keep the host online continuously for fastest replies. The Render deployment
+  uses Telegram webhooks; local development can still use polling with
+  `python -m mi_bot.main`.
 
 ## Tests
 
@@ -199,6 +202,7 @@ src/mi_bot/config.py
 src/mi_bot/languages.py
 src/mi_bot/storage.py
 src/mi_bot/translator.py
+src/mi_bot/webhook.py
 supabase/schema.sql
 tests/test_basic.py
 ```
