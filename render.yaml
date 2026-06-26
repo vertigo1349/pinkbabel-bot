@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: pinkbabel
+    name: pinkbabel-bot
     runtime: python
     plan: free
     buildCommand: python -m pip install .
