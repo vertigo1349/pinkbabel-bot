@@ -265,6 +265,18 @@ class SupabasePreferenceStore:
                 continue
         return sorted(languages)
 
+    def touch(self) -> bool:
+        """Run a tiny read so Supabase counts real database activity."""
+
+        self._request(
+            "pinkbabel_chats",
+            query={
+                "select": "chat_id",
+                "limit": "1",
+            },
+        )
+        return True
+
     def _ensure_chat(self, chat_id: int) -> None:
         self._upsert("pinkbabel_chats", {"chat_id": chat_id}, "chat_id")
 
@@ -401,6 +413,13 @@ class ResilientPreferenceStore:
         except StorageError as exc:
             self._log_error(exc)
             return self.fallback.get_group_languages(chat_id)
+
+    def touch(self) -> bool:
+        try:
+            return self.primary.touch()
+        except StorageError as exc:
+            self._log_error(exc)
+            return False
 
     @staticmethod
     def _log_error(exc: StorageError) -> None:

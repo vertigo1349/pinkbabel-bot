@@ -120,6 +120,27 @@ The secret key bypasses Row Level Security and must only exist in Render or
 another trusted server environment. The SQL schema blocks the public `anon`
 and `authenticated` roles from reading or changing bot preferences.
 
+### If Supabase pauses the database
+
+On Supabase Free, a project can be paused after several days of low database
+activity. If that happens, restore it from the Supabase dashboard first:
+
+1. Open Supabase.
+2. Select the paused PinkBabel project.
+3. Click `Resume project` and confirm.
+
+Code cannot resume a paused Supabase project without access to your Supabase
+account. After it is resumed, you can reduce future pauses by configuring an
+external monitor to call this URL once per day:
+
+```text
+https://pinkbabel-bot.onrender.com/health?touch=db
+```
+
+The normal `/health` endpoint only proves Render is awake. The `?touch=db`
+version also runs a tiny Supabase read against `pinkbabel_chats`, which creates
+real database activity without writing data.
+
 ## Deploy with Docker
 
 Build the image:

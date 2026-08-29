@@ -247,6 +247,35 @@ def test_supabase_store_reads_group_languages(
     assert "/rest/v1/pinkbabel_users?" in requests[0][0].full_url
 
 
+def test_supabase_store_touch_runs_lightweight_read(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    class FakeResponse:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc_value, traceback):
+            return False
+
+        def read(self) -> bytes:
+            return b"[]"
+
+    requests = []
+
+    def fake_urlopen(request, timeout):
+        requests.append((request, timeout))
+        return FakeResponse()
+
+    monkeypatch.setattr("mi_bot.storage.urlopen", fake_urlopen)
+    store = SupabasePreferenceStore("https://example.supabase.co", "secret")
+
+    assert store.touch() is True
+    assert requests[0][0].method == "GET"
+    assert "/rest/v1/pinkbabel_chats?" in requests[0][0].full_url
+    assert "select=chat_id" in requests[0][0].full_url
+    assert "limit=1" in requests[0][0].full_url
+
+
 def test_supabase_store_upserts_chat_language(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

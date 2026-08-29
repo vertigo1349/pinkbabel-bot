@@ -103,10 +103,24 @@ def _stop_once() -> None:
         _loop.call_soon_threadsafe(_loop.stop)
 
 
+def _touch_database() -> str:
+    if _bot is None:
+        return "unavailable"
+
+    touch = getattr(_bot.preferences, "touch", None)
+    if not callable(touch):
+        return "not_configured"
+
+    return "ok" if touch() else "fallback"
+
+
 @flask_app.get("/")
 @flask_app.get("/health")
 def health():
-    return jsonify({"status": "ok", "service": "PinkBabel", "mode": "webhook"})
+    payload = {"status": "ok", "service": "PinkBabel", "mode": "webhook"}
+    if request.args.get("touch") in {"1", "true", "db", "supabase"}:
+        payload["database"] = _touch_database()
+    return jsonify(payload)
 
 
 @flask_app.post("/<path:path>")
