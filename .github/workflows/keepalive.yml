@@ -1,0 +1,14 @@
+name: Keep PinkBabel awake
+
+on:
+  schedule:
+    - cron: "17 9 * * *"
+  workflow_dispatch:
+
+jobs:
+  touch-health:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Touch Render and Supabase
+        run: |
+          curl --fail --show-error --location --max-time 60 "https://pinkbabel-bot.onrender.com/health?touch=db"

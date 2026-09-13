@@ -130,8 +130,8 @@ activity. If that happens, restore it from the Supabase dashboard first:
 3. Click `Resume project` and confirm.
 
 Code cannot resume a paused Supabase project without access to your Supabase
-account. After it is resumed, you can reduce future pauses by configuring an
-external monitor to call this URL once per day:
+account. After it is resumed, the included GitHub Actions workflow
+`.github/workflows/keepalive.yml` calls this URL once per day:
 
 ```text
 https://pinkbabel-bot.onrender.com/health?touch=db
