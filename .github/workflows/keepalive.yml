@@ -11,4 +11,9 @@ jobs:
     steps:
       - name: Touch Render and Supabase
         run: |
-          curl --fail --show-error --location --max-time 60 "https://pinkbabel-bot.onrender.com/health?touch=db"
+          response="$(curl --fail --show-error --location --max-time 60 "https://pinkbabel-bot.onrender.com/health?touch=db")"
+          echo "$response"
+          case "$response" in
+            *'"database":"ok"'*) ;;
+            *) echo "Expected database keepalive to return database=ok"; exit 1 ;;
+          esac
