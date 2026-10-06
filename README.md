@@ -112,6 +112,12 @@ are configured. Otherwise it falls back to the local JSON file.
 4. Create or copy a server secret key from `Settings > API Keys`.
 5. Store both values only as environment variables.
 
+For `SUPABASE_SECRET_KEY`, use a secret API key starting with `sb_secret_`
+from the same project as `SUPABASE_URL`. The legacy `service_role` API key
+also works. Do not use the database password, JWT signing secret, or a
+publishable/`anon` key for this server adapter. New API keys are sent only
+in the `apikey` header; legacy JWT keys also use `Authorization: Bearer`.
+
 Use the HTTP Project URL for `SUPABASE_URL`. A value that starts with
 `postgresql://` is the direct database connection string and will not work with
 PinkBabel's REST storage adapter.
@@ -140,6 +146,11 @@ https://pinkbabel-bot.onrender.com/health?touch=db
 The normal `/health` endpoint only proves Render is awake. The `?touch=db`
 version also runs a tiny Supabase read against `pinkbabel_chats`, which creates
 real database activity without writing data.
+
+If this endpoint returns `"database":"fallback"` while Supabase is healthy,
+check the Render logs. HTTP 401 with `Invalid API key` means Supabase rejected
+the configured credentials. Update `SUPABASE_SECRET_KEY` in Render with a
+valid secret API key from the PinkBabel project and deploy the latest code.
 
 ## Deploy with Docker
 

@@ -247,8 +247,18 @@ def test_supabase_store_reads_group_languages(
     assert "/rest/v1/pinkbabel_users?" in requests[0][0].full_url
 
 
+@pytest.mark.parametrize(
+    ("api_key", "authorization"),
+    [
+        ("sb_secret_test_only", None),
+        ("sb_publishable_test_only", None),
+        ("legacy_service_role_test_only", "Bearer legacy_service_role_test_only"),
+    ],
+)
 def test_supabase_store_touch_runs_lightweight_read(
     monkeypatch: pytest.MonkeyPatch,
+    api_key: str,
+    authorization: str | None,
 ) -> None:
     class FakeResponse:
         def __enter__(self):
@@ -267,9 +277,11 @@ def test_supabase_store_touch_runs_lightweight_read(
         return FakeResponse()
 
     monkeypatch.setattr("mi_bot.storage.urlopen", fake_urlopen)
-    store = SupabasePreferenceStore("https://example.supabase.co", "secret")
+    store = SupabasePreferenceStore("https://example.supabase.co", api_key)
 
     assert store.touch() is True
+    assert requests[0][0].get_header("Apikey") == api_key
+    assert requests[0][0].get_header("Authorization") == authorization
     assert requests[0][0].method == "GET"
     assert "/rest/v1/pinkbabel_chats?" in requests[0][0].full_url
     assert "select=chat_id" in requests[0][0].full_url

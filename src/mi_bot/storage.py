@@ -319,9 +319,11 @@ class SupabasePreferenceStore:
 
         headers = {
             "apikey": self.api_key,
-            "Authorization": f"Bearer {self.api_key}",
             "Accept": "application/json",
         }
+        # New API keys are not JWTs and only belong in the apikey header.
+        if not self.api_key.startswith(("sb_secret_", "sb_publishable_")):
+            headers["Authorization"] = f"Bearer {self.api_key}"
         data = None
         if payload is not None:
             headers["Content-Type"] = "application/json"
