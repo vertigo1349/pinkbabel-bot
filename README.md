@@ -217,6 +217,20 @@ The first response after sleep can still be slow on the free plan.
   uses Telegram webhooks; local development can still use polling with
   `python -m mi_bot.main`.
 
+### Translation errors
+
+Translation errors are separate from Supabase preference storage errors.
+The bot reports rate limits, unsupported languages, excessive text length,
+and connection failures in Spanish. Render logs show
+`Translation provider error: <exception type>` without logging message text.
+
+`TooManyRequests` means Google's web translator returned HTTP 429. Wait before
+retrying; changing Supabase credentials will not remove this translation limit.
+This adapter does not automatically retry a blocked request or switch providers.
+An `EmptyResponse` or another exception type needs investigation of the
+translation provider. A successful `/health?touch=db` only checks storage,
+not the translation service.
+
 ## Tests
 
 Run the basic test suite with:
